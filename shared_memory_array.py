@@ -2,6 +2,8 @@
 A simple approach to using shared memory to transfer numpy array and associated metadata between
 processes, inspired by:
 https://www.reddit.com/r/learnpython/comments/4u0xh8/fastest_way_to_share_numpy_arrays_between
+
+Here for passing metadata related to the array, we use a multiprocessing Queue.
 """
 import multiprocessing as mp
 import sys
@@ -24,7 +26,7 @@ def frame_stream(camera_index, per_camera_array, array_dim):
     to this camera
     :param Tuple[int. int] array_dim: dimensions in pixels for the numpy array
     """
-    print(f"A process for processing data from camera id: {camera_index} has started"
+    print(f"A worker process for processing data from camera id: {camera_index} has started"
           f" processing data in background.")
     queue, mp_array, np_array = per_camera_array
     frames_written = 0
@@ -81,20 +83,21 @@ def benchmark(array_dim, number_of_cameras, show_img):
     """Measure performance of this implementation"""
     print("Master process started.")
     per_camera_arrays, procs = setup_mp_resources(array_dim, number_of_cameras)
-    [p.start() for p in procs]
+    for proc in procs:
+        proc.start()
 
     time1 = time.time()
     for _ in tqdm(range(1000)):
         for camera_index in range(number_of_cameras):
-            img = display_frame_from_camera(show_img, per_camera_arrays,
-                                            selected_camera_index=camera_index)
-
-
+            _ = display_frame_from_camera(show_img, per_camera_arrays,
+                                          selected_camera_index=camera_index)
     time2 = time.time()
 
     # Cleanup
     cv2.destroyAllWindows()
-    [p.terminate() for p in procs]
+    for proc in procs:
+        proc.terminate()
+
     print("Master process finished.")
     return time2-time1
 
