@@ -34,6 +34,7 @@ def frame_stream(camera_index, per_camera_array, array_dim):
         queue.put((np_array, frames_written))
         frames_written += 1
 
+
 def setup_mp_resources(array_dim, number_of_cameras):
     """Setup the multiprocessing resources.
      Prepare a queue for each process, used for sharing the frames and the associated metadata
@@ -50,10 +51,11 @@ def setup_mp_resources(array_dim, number_of_cameras):
         procs.append(proc)
     return per_camera_arrays, procs
 
+
 def display_frame_from_camera(show_img, per_camera_arrays, selected_camera_index):
     """Obtain a frame on master process from worker process with index == selected_camera_index"""
     queue = per_camera_arrays[selected_camera_index]
-    (np_array, frame_metadata) = queue.get() # pylint: disable = unused-variable
+    (np_array, frame_metadata) = queue.get()  # pylint: disable = unused-variable
     img = np_array.astype("uint8").copy()
     if show_img:
         cv2.imshow("img", img)
@@ -61,6 +63,7 @@ def display_frame_from_camera(show_img, per_camera_arrays, selected_camera_index
         if k == ord("q"):
             sys.exit()
     return img
+
 
 def benchmark(array_dim, number_of_cameras, show_img):
     """Measure performance of this implementation"""
@@ -81,6 +84,7 @@ def benchmark(array_dim, number_of_cameras, show_img):
         proc.terminate()
     print("Master process finished.")
     return time2-time1
+
 
 if __name__ == "__main__":
     benchmark(array_dim=(240, 320), number_of_cameras=2, show_img=True)

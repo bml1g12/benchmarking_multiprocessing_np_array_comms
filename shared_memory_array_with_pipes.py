@@ -51,7 +51,6 @@ def setup_mp_resources(array_dim, number_of_cameras):
     procs = []
     per_camera_arrays = {}
 
-
     for camera_index in range(number_of_cameras):
         timestamp_pipe = {}
         timestamp_pipe["child"], timestamp_pipe["parent"] = mp.Pipe()
@@ -63,10 +62,12 @@ def setup_mp_resources(array_dim, number_of_cameras):
         procs.append(proc)
     return per_camera_arrays, procs
 
+
 def display_frame_from_camera(show_img, per_camera_arrays, selected_camera_index):
     """Obtain a frame on master process from worker process with index == selected_camera_index"""
     timestamp_pipe, mp_array, np_array = per_camera_arrays[selected_camera_index]
-    _ = timestamp_pipe["parent"].recv() # obtain the frame metadata
+    # get the frame metadata
+    _ = timestamp_pipe["parent"].recv()
     img = np_array.astype("uint8").copy()
     mp_array.release()
     if show_img:
@@ -75,6 +76,7 @@ def display_frame_from_camera(show_img, per_camera_arrays, selected_camera_index
         if k == ord("q"):
             sys.exit()
     return img
+
 
 def benchmark(array_dim, number_of_cameras, show_img):
     """Measure performance of this implementation"""
@@ -89,7 +91,6 @@ def benchmark(array_dim, number_of_cameras, show_img):
             _ = display_frame_from_camera(show_img, per_camera_arrays,
                                           selected_camera_index=camera_index)
 
-
     time2 = time.time()
     # Cleanup
     cv2.destroyAllWindows()
@@ -97,6 +98,7 @@ def benchmark(array_dim, number_of_cameras, show_img):
         proc.terminate()
     print("Master process finished.")
     return time2-time1
+
 
 if __name__ == "__main__":
     benchmark(array_dim=(240, 320), number_of_cameras=2, show_img=True)

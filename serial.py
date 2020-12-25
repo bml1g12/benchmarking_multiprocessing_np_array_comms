@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 from shared import prepare_frame
 
+
 def frame_stream(camera_index, array_dim):
     """A demo of a function that is obtaining numpy arrays, and then storing them in a way that
     can be accessed by other processes efficiently. For example, can imagine this represents a
@@ -24,13 +25,13 @@ def frame_stream(camera_index, array_dim):
         frame = prepare_frame(array_dim, frames_written)
         np_array = frame
         # store img and metadata related to the frame as a tuple
-        yield (np_array, frames_written)
+        yield np_array, frames_written
         frames_written += 1
 
 
 def display_frame_from_camera(frame_gen, show_img):
     """For a given camera"s frame generator, obtain the frame and metadata associated."""
-    (np_array, frames_written) = next(frame_gen) #pylint: disable = unused-variable
+    (np_array, frames_written) = next(frame_gen)  #pylint: disable = unused-variable
     img = np_array.astype("uint8").copy()
     if show_img:
         cv2.imshow("img", img)
@@ -38,6 +39,7 @@ def display_frame_from_camera(frame_gen, show_img):
         if k == ord("q"):
             sys.exit()
     return img
+
 
 def benchmark(array_dim, number_of_cameras, show_img):
     """Measure performance of this implementation"""
@@ -54,6 +56,7 @@ def benchmark(array_dim, number_of_cameras, show_img):
     cv2.destroyAllWindows()
     print("Master process finished.")
     return time2-time1
+
 
 if __name__ == "__main__":
     benchmark(array_dim=(240, 320), number_of_cameras=2, show_img=True)

@@ -1,4 +1,5 @@
-"""Shared code between benchmarks"""
+"""Shared functions between benchmarks"""
+
 import time
 
 import numpy as np
