@@ -31,7 +31,7 @@ def frame_stream(camera_index, array_dim):
 
 def display_frame_from_camera(frame_gen, show_img):
     """For a given camera"s frame generator, obtain the frame and metadata associated."""
-    (np_array, frames_written) = next(frame_gen)  #pylint: disable = unused-variable
+    (np_array, frames_written) = next(frame_gen)  # pylint: disable = unused-variable
     img = np_array.astype("uint8").copy()
     if show_img:
         cv2.imshow("img", img)

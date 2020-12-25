@@ -1,5 +1,5 @@
 """Benchmarks different implementations for sharing numpy arrays between processes."""
-#pylint: disable=expression-not-assigned
+# pylint: disable=expression-not-assigned
 import pandas as pd
 
 import src.naive_mp_queue as naive_mp_queue
@@ -36,6 +36,7 @@ def main():
         timings.append(row)
     df = pd.DataFrame(timings)
     df.to_csv("timings/benchmark_timings.csv")
+
 
 if __name__ == "__main__":
     main()
