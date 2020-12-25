@@ -1,9 +1,6 @@
 """
-The naive and most obvious way to share arrays between processes; a simple queue
+The serial implementation as a baseline for processing many streams of frames.
 """
-import multiprocessing as mp
-import numpy as np
-import random
 import sys
 import time
 
@@ -11,7 +8,6 @@ import cv2
 from tqdm import tqdm
 
 from shared import prepare_frame
-
 
 def frame_stream(camera_index, array_dim):
     """A demo of a function that is obtaining numpy arrays, and then storing them in a way that
@@ -34,7 +30,7 @@ def frame_stream(camera_index, array_dim):
 
 def display_frame_from_camera(frame_gen, show_img):
     """For a given camera"s frame generator, obtain the frame and metadata associated."""
-    (np_array, frames_written) = next(frame_gen)
+    (np_array, frames_written) = next(frame_gen) #pylint: disable = unused-variable
     img = np_array.astype("uint8").copy()
     if show_img:
         cv2.imshow("img", img)
@@ -45,14 +41,14 @@ def display_frame_from_camera(frame_gen, show_img):
 
 def benchmark(array_dim, number_of_cameras, show_img):
     """Measure performance of this implementation"""
-    print("Master process started.")
+    print("Serial process started.")
     frame_gens = [frame_stream(selected_camera_index,
                                array_dim) for selected_camera_index in range(number_of_cameras)]
     time1 = time.time()
     for _ in tqdm(range(1000)):
         for camera_index in range(number_of_cameras):
-            img = display_frame_from_camera(frame_gens[camera_index],
-                                            show_img)
+            _ = display_frame_from_camera(frame_gens[camera_index],
+                                          show_img)
     time2 = time.time()
     # Cleanup
     cv2.destroyAllWindows()
