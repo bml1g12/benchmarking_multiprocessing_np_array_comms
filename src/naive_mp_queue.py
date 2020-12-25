@@ -1,25 +1,22 @@
 """
-A simple approach to using shared memory to transfer numpy array and associated metadata between
-processes
-
-Here for passing metadata related to the array, we use a multiprocessing pipe which is more
-efficient than a mulitprocessing Queue for communication between a pair of processes.
+The naive and most obvious way to share arrays between processes; a simple queue.
+Unfortunately because mp.Queue pickles the numpy array, this is a functional but extremely
+slow and expensive way to share numpy arrays between processes.
 """
 import multiprocessing as mp
 import sys
 import time
 
 import cv2
-import numpy as np
 from tqdm import tqdm
 
-from shared import prepare_frame
+from src.shared import prepare_frame
 
 
 def frame_stream(camera_index, per_camera_array, array_dim):
     """A demo of a function that is obtaining numpy arrays, and then storing them in a way that
-    can be accessed by other processes efficiently. For example, can imagine this represents a
-    camera feed with some processing of the feed.
+    can be accessed by other processes efficiently. For example, can imagine this represents
+    a camera feed with some processing of the feed.
 
     :param int camera_index: 0-indexed index specific to each frame stream/camera.
     :param tuple per_camera_array: Machinery for sharing information between processes, but specific
@@ -28,35 +25,27 @@ def frame_stream(camera_index, per_camera_array, array_dim):
     """
     print(f"A worker process for processing data from camera id: {camera_index} has started"
           f" processing data in background.")
-    timestamp_pipe, mp_array, np_array = per_camera_array
+    queue = per_camera_array
     frames_written = 0
     while True:
         frame = prepare_frame(array_dim, frames_written)
-        mp_array.acquire()
-        np_array[:] = frame
-        # store metadata related to the frame, such as timestamp
-        timestamp_pipe["child"].send(frames_written)
+        np_array = frame
+        # store img and metadata related to the frame as a tuple
+        queue.put((np_array, frames_written))
         frames_written += 1
 
 
 def setup_mp_resources(array_dim, number_of_cameras):
     """Setup the multiprocessing resources.
-    For each camera, produce create tuples of (multiprocessing.Array, numpy.ndarray)
-    The numpy array is a view of the multiprocessing Array. Each tuple is specific to each
-    worker process (or "camera" if we image each process is processing a camera), and the array
-    is being used to share memory between the worker and the master process.
-
-    Here a mp.Pipe is used to communciate associated frame metadata from worker to master.
-    """
+     Prepare a queue for each process, used for sharing the frames and the associated metadata
+     (together as a tuple) from slave processes to master."""
     procs = []
     per_camera_arrays = {}
-
+    # For each camera, produce create tuples of (multiprocessing.Array, numpy.ndarray)
+    # referencing the same underlying buffers
     for camera_index in range(number_of_cameras):
-        timestamp_pipe = {}
-        timestamp_pipe["child"], timestamp_pipe["parent"] = mp.Pipe()
-        mp_array = mp.Array("I", int(np.prod(array_dim)), lock=mp.Lock())
-        np_array = np.frombuffer(mp_array.get_obj(), dtype="I").reshape(array_dim)
-        per_camera_arrays[camera_index] = (timestamp_pipe, mp_array, np_array)
+        queue = mp.Queue(maxsize=100)
+        per_camera_arrays[camera_index] = queue
         proc = mp.Process(target=frame_stream,
                           args=(camera_index, per_camera_arrays[camera_index], array_dim))
         procs.append(proc)
@@ -65,11 +54,9 @@ def setup_mp_resources(array_dim, number_of_cameras):
 
 def display_frame_from_camera(show_img, per_camera_arrays, selected_camera_index):
     """Obtain a frame on master process from worker process with index == selected_camera_index"""
-    timestamp_pipe, mp_array, np_array = per_camera_arrays[selected_camera_index]
-    # get the frame metadata
-    _ = timestamp_pipe["parent"].recv()
+    queue = per_camera_arrays[selected_camera_index]
+    (np_array, frame_metadata) = queue.get()  # pylint: disable = unused-variable
     img = np_array.astype("uint8").copy()
-    mp_array.release()
     if show_img:
         cv2.imshow("img", img)
         k = cv2.waitKey(1)
@@ -90,7 +77,6 @@ def benchmark(array_dim, number_of_cameras, show_img):
         for camera_index in range(number_of_cameras):
             _ = display_frame_from_camera(show_img, per_camera_arrays,
                                           selected_camera_index=camera_index)
-
     time2 = time.time()
     # Cleanup
     cv2.destroyAllWindows()

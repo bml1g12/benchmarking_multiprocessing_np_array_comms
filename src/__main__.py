@@ -2,10 +2,10 @@
 #pylint: disable=expression-not-assigned
 import pandas as pd
 
-import naive_mp_queue
-import serial
-import shared_memory_array
-import shared_memory_array_with_pipes
+import src.naive_mp_queue as naive_mp_queue
+import src.serial as serial
+import src.shared_memory_array as shared_memory_array
+import src.shared_memory_array_with_pipes as shared_memory_array_with_pipes
 
 
 def main():
