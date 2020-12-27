@@ -1,6 +1,7 @@
 """Benchmark performance of put/getting numpy arrays on a single process"""
 
 import multiprocessing as mp
+import threading
 from queue import Queue
 
 import numpy as np
@@ -17,7 +18,23 @@ def baseline_benchmark(np_arr):
     return new_array
 
 
-def mp_queue_benchmark(np_arr, mp_queue):
+def queue_1thread_module(np_arr, queue_module):
+    """queue library's queues"""
+    queue_module.put(np_arr)
+    np_arr = queue_module.get()
+    new_array = np_arr * 2  # example of some processing done on the array
+    return new_array
+
+
+def queue_multithread_module(np_arr, queue, n_frames):
+    thread = threading.Thread(target=worker_producer,
+                            args=(np_arr, queue, n_frames),
+                            daemon=True)
+    thread.start()
+    consumer(n_frames, queue)
+
+
+def mp_queue_1proc_benchmark(np_arr, mp_queue):
     """multiprocessing queues"""
     mp_queue.put(np_arr)
     np_arr = mp_queue.get()
@@ -25,12 +42,24 @@ def mp_queue_benchmark(np_arr, mp_queue):
     return new_array
 
 
-def queue_module_benchmark(np_arr, queue_module):
-    """queue library's queues"""
-    queue_module.put(np_arr)
-    np_arr = queue_module.get()
-    new_array = np_arr * 2  # example of some processing done on the array
-    return new_array
+def mp_queue_multiproc_benchmark(np_arr, queue, n_frames):
+    proc = mp.Process(target=worker_producer,
+                      args=(np_arr, queue, n_frames))
+    proc.start()
+    consumer(n_frames, queue)
+    proc.terminate()
+
+
+def worker_producer(np_arr, queue, n_frames):
+    for i in range(n_frames):
+        queue.put(np_arr)
+
+
+def consumer(n_frames, queue):
+
+    for i in range(n_frames):
+        np_arr = queue.get()
+        new_array = np_arr * 2  # example of some processing done on the array
 
 
 def get_timings(groupname, n_frames):
@@ -58,18 +87,26 @@ def benchmark_queues():
     queue_module = Queue()
     timings = []
 
-    for _ in _TIME.measure_many("baseline", samples=n_frames):
+    for _ in _TIME.measure_many("baseline", samples=n_frames, threshold=3):
         baseline_benchmark(np_arr)
 
-    for _ in _TIME.measure_many("mp_queue", samples=n_frames):
-        mp_queue_benchmark(np_arr, mp_queue)
+    for _ in _TIME.measure_many("queue_module", samples=n_frames, threshold=3):
+        queue_1thread_module(np_arr, queue_module)
 
-    for _ in _TIME.measure_many("queue_module", samples=n_frames):
-        queue_module_benchmark(np_arr, queue_module)
+    for _ in _TIME.measure_many("queue_multithread_module", samples=n_frames, threshold=3):
+        queue_multithread_module(np_arr, mp_queue, n_frames)
+
+    for _ in _TIME.measure_many("mp_queue", samples=n_frames, threshold=3):
+        mp_queue_1proc_benchmark(np_arr, mp_queue)
+
+    for _ in _TIME.measure_many("mp_queue_multiproc_benchmark", samples=n_frames, threshold=3):
+        mp_queue_multiproc_benchmark(np_arr, mp_queue, n_frames)
 
     timings.append(get_timings("baseline", n_frames))
-    timings.append(get_timings("mp_queue", n_frames))
     timings.append(get_timings("queue_module", n_frames))
+    timings.append(get_timings("queue_multithread_module", n_frames))
+    timings.append(get_timings("mp_queue", n_frames))
+    timings.append(get_timings("mp_queue_multiproc_benchmark", n_frames))
 
     df = pd.DataFrame(timings)
 
