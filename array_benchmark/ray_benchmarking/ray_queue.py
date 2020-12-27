@@ -3,17 +3,18 @@ The naive and most obvious way to share arrays between processes; a simple queue
 Unfortunately because mp.Queue pickles the numpy array, this is a functional but extremely
 slow and expensive way to share numpy arrays between processes.
 """
-import ray
-from ray.util.queue import Queue as RayQueue
 import sys
 import time
 
 import cv2
+import ray
+from ray.util.queue import Queue as RayQueue
 from tqdm import tqdm
 
 from array_benchmark.shared import prepare_frame
 
 ray.init()
+
 
 @ray.remote
 def frame_stream(camera_index, per_camera_array, array_dim):
@@ -70,8 +71,7 @@ def display_frame_from_camera(show_img, per_camera_arrays, selected_camera_index
 def benchmark(array_dim, number_of_cameras, show_img):
     """Measure performance of this implementation"""
     print("Master process started.")
-    per_camera_arrays, procs = setup_mp_resources(array_dim, number_of_cameras)
-
+    per_camera_arrays, _ = setup_mp_resources(array_dim, number_of_cameras)
 
     time1 = time.time()
     for _ in tqdm(range(1000)):
@@ -82,8 +82,8 @@ def benchmark(array_dim, number_of_cameras, show_img):
     # Cleanup
     cv2.destroyAllWindows()
 
-    print(f"Master process finished: {time2-time1}")
-    return time2-time1
+    print(f"Master process finished: {time2 - time1}")
+    return time2 - time1
 
 
 if __name__ == "__main__":
