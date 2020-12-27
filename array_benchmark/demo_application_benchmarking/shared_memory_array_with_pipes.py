@@ -69,12 +69,12 @@ def display_frame_from_camera(show_img, per_camera_arrays, selected_camera_index
     # get the frame metadata
     _ = timestamp_pipe["parent"].recv()
     img = np_array.astype("uint8").copy()
-    mp_array.release()
     if show_img:
         cv2.imshow("img", img)
         k = cv2.waitKey(1)
         if k == ord("q"):
             sys.exit()
+    mp_array.release()
     return img
 
 

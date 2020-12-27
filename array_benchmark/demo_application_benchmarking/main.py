@@ -17,7 +17,7 @@ def main():
     show_img = False
 
     timings = []
-    for _ in range(10):
+    for _ in range(1):
         row = {}
         time_taken = serial.benchmark(array_dim, number_of_cameras, show_img)
         print(f"serial: {time_taken}")
