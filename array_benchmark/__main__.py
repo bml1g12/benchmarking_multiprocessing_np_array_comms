@@ -5,7 +5,9 @@ import pandas as pd
 import array_benchmark.demo_application_benchmarking.naive_mp_queue as naive_mp_queue
 import array_benchmark.demo_application_benchmarking.serial as serial
 import array_benchmark.demo_application_benchmarking.shared_memory_array as shared_memory_array
-import array_benchmark.demo_application_benchmarking.shared_memory_array_with_pipes as shared_memory_array_with_pipes
+import \
+    array_benchmark.demo_application_benchmarking.shared_memory_array_with_pipes as \
+        shared_memory_array_with_pipes
 
 
 def main():
