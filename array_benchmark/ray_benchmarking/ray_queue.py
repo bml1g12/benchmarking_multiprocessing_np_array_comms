@@ -3,16 +3,19 @@ The naive and most obvious way to share arrays between processes; a simple queue
 Unfortunately because mp.Queue pickles the numpy array, this is a functional but extremely
 slow and expensive way to share numpy arrays between processes.
 """
-import multiprocessing as mp
+import ray
+from ray.util.queue import Queue as RayQueue
 import sys
 import time
 
 import cv2
 from tqdm import tqdm
 
-from src.shared import prepare_frame
+from array_benchmark.shared import prepare_frame
 
+ray.init()
 
+@ray.remote
 def frame_stream(camera_index, per_camera_array, array_dim):
     """A demo of a function that is obtaining numpy arrays, and then storing them in a way that
     can be accessed by other processes efficiently. For example, can imagine this represents
@@ -44,10 +47,9 @@ def setup_mp_resources(array_dim, number_of_cameras):
     # For each camera, produce create tuples of (multiprocessing.Array, numpy.ndarray)
     # referencing the same underlying buffers
     for camera_index in range(number_of_cameras):
-        queue = mp.Queue(maxsize=100)
+        queue = RayQueue(maxsize=100)
         per_camera_arrays[camera_index] = queue
-        proc = mp.Process(target=frame_stream,
-                          args=(camera_index, per_camera_arrays[camera_index], array_dim))
+        proc = frame_stream.remote(camera_index, per_camera_arrays[camera_index], array_dim)
         procs.append(proc)
     return per_camera_arrays, procs
 
@@ -69,8 +71,7 @@ def benchmark(array_dim, number_of_cameras, show_img):
     """Measure performance of this implementation"""
     print("Master process started.")
     per_camera_arrays, procs = setup_mp_resources(array_dim, number_of_cameras)
-    for proc in procs:
-        proc.start()
+
 
     time1 = time.time()
     for _ in tqdm(range(1000)):
@@ -80,9 +81,8 @@ def benchmark(array_dim, number_of_cameras, show_img):
     time2 = time.time()
     # Cleanup
     cv2.destroyAllWindows()
-    for proc in procs:
-        proc.terminate()
-    print("Master process finished.")
+
+    print(f"Master process finished: {time2-time1}")
     return time2-time1
 
 

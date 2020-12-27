@@ -13,7 +13,7 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-from src.shared import prepare_frame
+from array_benchmark.shared import prepare_frame
 
 
 def frame_stream(camera_index, per_camera_array, array_dim):
@@ -86,7 +86,7 @@ def benchmark(array_dim, number_of_cameras, show_img):
         proc.start()
 
     time1 = time.time()
-    for _ in tqdm(range(1000)):
+    for _ in tqdm(range(2000)):
         for camera_index in range(number_of_cameras):
             _ = display_frame_from_camera(show_img, per_camera_arrays,
                                           selected_camera_index=camera_index)
@@ -96,9 +96,9 @@ def benchmark(array_dim, number_of_cameras, show_img):
     cv2.destroyAllWindows()
     for proc in procs:
         proc.terminate()
-    print("Master process finished.")
+    print(f"Master process finished: {time2-time1}")
     return time2-time1
 
 
 if __name__ == "__main__":
-    benchmark(array_dim=(240, 320), number_of_cameras=2, show_img=True)
+    benchmark(array_dim=(240, 320), number_of_cameras=2, show_img=False)

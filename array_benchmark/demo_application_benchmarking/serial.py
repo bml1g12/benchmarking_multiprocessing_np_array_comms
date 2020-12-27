@@ -7,7 +7,7 @@ import time
 import cv2
 from tqdm import tqdm
 
-from src.shared import prepare_frame
+from array_benchmark.shared import prepare_frame
 
 
 def frame_stream(camera_index, array_dim):
