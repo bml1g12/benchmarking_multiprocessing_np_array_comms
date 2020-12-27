@@ -27,6 +27,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install pylint pytest flake8 pylint_quotes numpy==1.18.1 opencv-python==4.1.2.30 tqdm==4.42.1 pandas==1.0.1 
+        python -m pip install -e .
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
       run: |
@@ -36,7 +37,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Lint with pylint
       run: |
-        pylint src/
+        pylint array_benchmark/
     - name: Test with pytest
       run: |
         pytest
