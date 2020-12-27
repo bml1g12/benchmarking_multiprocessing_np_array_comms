@@ -2,64 +2,82 @@
 
 import multiprocessing as mp
 import threading
+import time
 from queue import Queue
 
 import numpy as np
-import timing
-
 import pandas as pd
+import timing
 
 _TIME = timing.get_timing_group(__name__)
 
 
-def baseline_benchmark(np_arr):
+def baseline_benchmark(np_arr_shape):
     """baseline"""
+    np_arr = np.random.random(np_arr_shape)  # produce a fresh array
     new_array = np_arr * 2  # example of some processing done on the array
     return new_array
 
 
-def queue_1thread_module(np_arr, queue_module):
-    """queue library's queues"""
+def queue_1thread_module(np_arr_shape, queue_module):
+    """queue library's queue. All is done on one thread here, and so it seems Python is smart
+    enough not to serialise/pickle the data."""
+    np_arr = np.random.random(np_arr_shape)  # produce a fresh array
     queue_module.put(np_arr)
     np_arr = queue_module.get()
     new_array = np_arr * 2  # example of some processing done on the array
     return new_array
 
 
-def queue_multithread_module(np_arr, queue, n_frames):
+def queue_multithread_module(np_arr_shape, queue, n_frames):
+    """Passing the numpy array from a producer thread to a consumer thread via a queue.
+    The pickling makes this extremely slow."""
     thread = threading.Thread(target=worker_producer,
-                            args=(np_arr, queue, n_frames),
-                            daemon=True)
+                              args=(np_arr_shape, queue, n_frames),
+                              daemon=True)
     thread.start()
-    consumer(n_frames, queue)
+    time1 = time.time()
+    consumer(n_frames, queue)  # will consume n_frames from producer
+    time2 = time.time()
+    return time2 - time1
 
 
-def mp_queue_1proc_benchmark(np_arr, mp_queue):
-    """multiprocessing queues"""
+def mp_queue_1proc_benchmark(np_arr_shape, mp_queue):
+    """multiprocessing queues. All is done on one process here, and so it seems Python is smart
+    enough not to serialise/pickle the data."""
+    np_arr = np.random.random(np_arr_shape)  # produce a fresh array
     mp_queue.put(np_arr)
     np_arr = mp_queue.get()
     new_array = np_arr * 2  # example of some processing done on the array
     return new_array
 
 
-def mp_queue_multiproc_benchmark(np_arr, queue, n_frames):
+def mp_queue_multiproc_benchmark(np_arr_shape, queue, n_frames):
+    """Passing the numpy array from a producer process to a consumer process via a queue.
+    The pickling makes this extremely slow."""
     proc = mp.Process(target=worker_producer,
-                      args=(np_arr, queue, n_frames))
+                      args=(np_arr_shape, queue, n_frames))
     proc.start()
-    consumer(n_frames, queue)
+    time1 = time.time()
+    consumer(n_frames, queue)  # will consume n_frames from producer
+    time2 = time.time()
     proc.terminate()
+    return time2 - time1
 
 
-def worker_producer(np_arr, queue, n_frames):
-    for i in range(n_frames):
+def worker_producer(np_arr_shape, queue, n_frames):
+    """A frame producer function, e.g. for a worker thread or process"""
+    for _ in range(n_frames):
+        np_arr = np.random.random(np_arr_shape)  # produce a fresh array
         queue.put(np_arr)
 
 
 def consumer(n_frames, queue):
-
-    for i in range(n_frames):
+    """A frame consumer function, which draws frames from the worker thread/process via a queue
+    and does a dummy calculation on the result."""
+    for _ in range(n_frames):
         np_arr = queue.get()
-        new_array = np_arr * 2  # example of some processing done on the array
+        _ = np_arr * 2  # example of some processing done on the array
 
 
 def get_timings(groupname, n_frames):
@@ -81,32 +99,44 @@ def get_timings(groupname, n_frames):
 
 def benchmark_queues():
     """Benchmark various implementations of queues for put/getting numpy arrays"""
-    np_arr = np.ones((1000, 1000))
+    np_arr_shape = (1000, 1000)
     n_frames = 100
     mp_queue = mp.Queue()
     queue_module = Queue()
     timings = []
 
     for _ in _TIME.measure_many("baseline", samples=n_frames, threshold=3):
-        baseline_benchmark(np_arr)
+        baseline_benchmark(np_arr_shape)
 
     for _ in _TIME.measure_many("queue_module", samples=n_frames, threshold=3):
-        queue_1thread_module(np_arr, queue_module)
-
-    for _ in _TIME.measure_many("queue_multithread_module", samples=n_frames, threshold=3):
-        queue_multithread_module(np_arr, mp_queue, n_frames)
+        queue_1thread_module(np_arr_shape, queue_module)
 
     for _ in _TIME.measure_many("mp_queue", samples=n_frames, threshold=3):
-        mp_queue_1proc_benchmark(np_arr, mp_queue)
-
-    for _ in _TIME.measure_many("mp_queue_multiproc_benchmark", samples=n_frames, threshold=3):
-        mp_queue_multiproc_benchmark(np_arr, mp_queue, n_frames)
+        mp_queue_1proc_benchmark(np_arr_shape, mp_queue)
 
     timings.append(get_timings("baseline", n_frames))
     timings.append(get_timings("queue_module", n_frames))
-    timings.append(get_timings("queue_multithread_module", n_frames))
     timings.append(get_timings("mp_queue", n_frames))
-    timings.append(get_timings("mp_queue_multiproc_benchmark", n_frames))
+
+    time_taken = queue_multithread_module(np_arr_shape, mp_queue, n_frames)
+    time_summary = {"groupname": "queue_multithread_module",
+                    "mean": time_taken / n_frames,
+                    "stddev": None,
+                    "fps": n_frames / time_taken}
+    print(f"{time_summary['groupname']}: time: = {time_summary['mean']} +/- "
+          f"{time_summary['stddev']}"
+          f" or FPS = {time_summary['fps']}")
+    timings.append(time_summary)
+
+    time_taken = mp_queue_multiproc_benchmark(np_arr_shape, mp_queue, n_frames)
+    time_summary = {"groupname": "mp_queue_multiproc_benchmark",
+                    "mean": time_taken / n_frames,
+                    "stddev": None,
+                    "fps": n_frames / time_taken}
+    print(f"{time_summary['groupname']}: time: = {time_summary['mean']} +/- "
+          f"{time_summary['stddev']}"
+          f" or FPS = {time_summary['fps']}")
+    timings.append(time_summary)
 
     df = pd.DataFrame(timings)
 
