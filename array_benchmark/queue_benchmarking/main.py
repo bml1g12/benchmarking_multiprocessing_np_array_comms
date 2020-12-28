@@ -38,7 +38,7 @@ def benchmark_queues():
 
     print("Starting mp_queue_multiproc_shared_memory_benchmark timings...")
     mp_queue_multiproc_shared_memory_benchmark(np_arr_shape, n_frames, repeats)
-    
+
     print("Starting mp_queue_multiproc_benchmark_arrayqueuelibrary timings...")
     mp_queue_multiproc_benchmark_arrayqueuelibrary(np_arr_shape, n_frames, repeats)
 

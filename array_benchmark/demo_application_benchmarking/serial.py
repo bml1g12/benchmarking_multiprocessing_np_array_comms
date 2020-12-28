@@ -67,4 +67,4 @@ def benchmark(array_dim, number_of_cameras, show_img, n_frames, repeats):
 
 
 if __name__ == "__main__":
-    benchmark(array_dim=(240, 320), number_of_cameras=2, show_img=True, n_frames=1000)
+    benchmark(array_dim=(240, 320), number_of_cameras=2, show_img=True, n_frames=1000, repeats=3)
