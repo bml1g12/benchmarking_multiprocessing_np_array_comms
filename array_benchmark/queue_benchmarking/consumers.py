@@ -1,19 +1,20 @@
 """consumers"""
 import time
+from tqdm import tqdm
 
 def consumer(n_frames, queue):
     """A frame consumer function, which draws frames from the worker thread/process via a queue
     and does a dummy calculation on the result."""
-    for _ in range(n_frames):
+    for _ in tqdm(range(n_frames)):
         np_arr = queue.get()
-        _ = np_arr * 2  # example of some processing done on the array
+        _ = np_arr.astype("uint8").copy() * 2  # example of some processing done on the array
 
 
 def consumer_shared_memory(n_frames, shared_memory):
     """A frame consumer function, which draws frames from the worker process via shared memory."""
     mp_array, np_array = shared_memory
-    for _ in range(n_frames):
-        _ = np_array * 2  # example of some processing done on the array
+    for _ in tqdm(range(n_frames)):
+        _ = np_array.astype("uint8").copy() * 2  # example of some processing done on the array
         while True:
             try:
                 mp_array.release()

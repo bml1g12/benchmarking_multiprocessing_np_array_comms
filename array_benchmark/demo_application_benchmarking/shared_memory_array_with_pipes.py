@@ -11,9 +11,12 @@ import time
 
 import cv2
 import numpy as np
+import timing
 from tqdm import tqdm
 
 from array_benchmark.shared import prepare_frame
+
+_TIME = timing.get_timing_group(__name__)
 
 
 def frame_stream(camera_index, per_camera_array, array_dim):
@@ -78,27 +81,31 @@ def display_frame_from_camera(show_img, per_camera_arrays, selected_camera_index
     return img
 
 
-def benchmark(array_dim, number_of_cameras, show_img):
+def benchmark(array_dim, number_of_cameras, show_img, n_frames, repeats):
     """Measure performance of this implementation"""
     print("Master process started.")
     per_camera_arrays, procs = setup_mp_resources(array_dim, number_of_cameras)
-    for proc in procs:
-        proc.start()
+    for timer in _TIME.measure_many("shared_memory_array_with_pipes", samples=repeats):
+        for proc in procs:
+            proc.start()
 
-    time1 = time.time()
-    for _ in tqdm(range(2000)):
-        for camera_index in range(number_of_cameras):
-            _ = display_frame_from_camera(show_img, per_camera_arrays,
-                                          selected_camera_index=camera_index)
-
-    time2 = time.time()
-    # Cleanup
-    cv2.destroyAllWindows()
-    for proc in procs:
-        proc.terminate()
-    print(f"Master process finished: {time2-time1}")
-    return time2-time1
+        time1 = time.time()
+        for _ in tqdm(range(n_frames)):
+            for camera_index in range(number_of_cameras):
+                _ = display_frame_from_camera(show_img, per_camera_arrays,
+                                              selected_camera_index=camera_index)
+        timer.stop()
+        time2 = time.time()
+        # Cleanup
+        cv2.destroyAllWindows()
+        for proc in procs:
+            proc.terminate()
+        print(f"Master process finished: {time2-time1}")
+        # for next test
+        per_camera_arrays, procs = setup_mp_resources(array_dim, number_of_cameras)
+    del per_camera_arrays
+    del procs
 
 
 if __name__ == "__main__":
-    benchmark(array_dim=(240, 320), number_of_cameras=2, show_img=False)
+    benchmark(array_dim=(240, 320), number_of_cameras=2, show_img=False, n_frames=1000)
