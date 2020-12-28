@@ -6,7 +6,7 @@ import timing
 from array_benchmark.queue_benchmarking.benchmarks import baseline_benchmark, \
     queue_1thread_module, \
     mp_queue_1proc_benchmark, queue_multithread_module, mp_queue_multiproc_benchmark, \
-    mp_queue_multiproc_shared_memory_benchmark
+    mp_queue_multiproc_shared_memory_benchmark, mp_queue_multiproc_benchmark_arrayqueuelibrary
 from array_benchmark.shared import get_timings
 
 _TIME = timing.get_timing_group(__name__)
@@ -38,6 +38,9 @@ def benchmark_queues():
 
     print("Starting mp_queue_multiproc_shared_memory_benchmark timings...")
     mp_queue_multiproc_shared_memory_benchmark(np_arr_shape, n_frames, repeats)
+    
+    print("Starting mp_queue_multiproc_benchmark_arrayqueuelibrary timings...")
+    mp_queue_multiproc_benchmark_arrayqueuelibrary(np_arr_shape, n_frames, repeats)
 
     timings.append(get_timings(metagroupname, "baseline_benchmark",
                                times_calculated_over_n_frames=n_frames))
@@ -50,6 +53,8 @@ def benchmark_queues():
     timings.append(get_timings(metagroupname, "mp_queue_multiproc_benchmark",
                                times_calculated_over_n_frames=n_frames))
     timings.append(get_timings(metagroupname, "mp_queue_multiproc_shared_memory_benchmark",
+                               times_calculated_over_n_frames=n_frames))
+    timings.append(get_timings(metagroupname, "mp_queue_multiproc_benchmark_arrayqueuelibrary",
                                times_calculated_over_n_frames=n_frames))
 
     df = pd.DataFrame(timings)

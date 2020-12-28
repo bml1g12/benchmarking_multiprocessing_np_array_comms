@@ -31,3 +31,8 @@ def worker_producer_shared_memory(np_arr_shape, shared_memory, n_frames):
         np_array[:] = prepare_random_frame(np_arr_shape)  # produce a fresh array
 
 
+def worker_producer_arrayqueuelibrary(np_arr_shape, queue, n_frames):
+    """A frame producer function, e.g. for a worker thread or process"""
+    for _ in range(n_frames):
+        np_arr = prepare_random_frame(np_arr_shape)  # produce a fresh array
+        queue.put(np_arr)

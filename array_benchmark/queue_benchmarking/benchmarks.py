@@ -2,19 +2,16 @@
 import inspect
 import multiprocessing as mp
 import threading
-
-
 from queue import Queue
-from tqdm import tqdm
-
 
 import numpy as np
 import timing
+from arrayqueues.shared_arrays import ArrayQueue
+from tqdm import tqdm
 
 from array_benchmark.queue_benchmarking.consumers import consumer, consumer_shared_memory
 from array_benchmark.queue_benchmarking.producers import worker_producer, \
     worker_producer_shared_memory, prepare_random_frame
-
 
 _TIME = timing.get_timing_group(__name__)
 
@@ -118,3 +115,20 @@ def mp_queue_multiproc_shared_memory_benchmark(np_arr_shape, n_frames, repeats):
         shared_memory = (mp_array, np_array)
 
     del mp_array, np_array, shared_memory
+
+
+def mp_queue_multiproc_benchmark_arrayqueuelibrary(np_arr_shape, n_frames, repeats):
+    """Passing the numpy array from a producer process to a consumer process via a queue.
+    The pickling makes this extremely slow."""
+    array_queue = ArrayQueue(100)
+
+    for timer in tqdm(_TIME.measure_many(inspect.currentframe().f_code.co_name, samples=repeats)):
+        proc = mp.Process(target=worker_producer,
+                          args=(np_arr_shape, array_queue, n_frames))
+        proc.start()
+        consumer(n_frames, array_queue)  # will consume n_frames from producer
+        timer.stop()
+        proc.terminate()
+        # for next test
+        array_queue = mp.Queue()
+    del array_queue
