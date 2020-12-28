@@ -7,7 +7,8 @@ def consumer(n_frames, queue):
     and does a dummy calculation on the result."""
     for _ in tqdm(range(n_frames)):
         np_arr = queue.get()
-        _ = np_arr.astype("uint8").copy() * 2  # example of some processing done on the array
+        # example of some processing done on the array:
+        _ = np_arr.astype("uint8").copy() * 2
 
 
 def consumer_shared_memory(n_frames, shared_memory):

@@ -32,5 +32,6 @@ def get_timings(metagroupname, groupname, times_calculated_over_n_frames):
           f" or FPS = {fps}")
     return {"groupname": groupname,
             "time_per_frame": f"{time_per_frame:.4f}",
-            "stddev": stddev,  # a little poorly defined given the number of samples is a variable
+            "time_for_all_frames": timing_group.summary[groupname]['mean'],
+            "stddev_for_all_frames": stddev,
             "fps": fps}

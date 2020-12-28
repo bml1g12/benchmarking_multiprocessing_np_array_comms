@@ -17,9 +17,13 @@ def prepare_random_frame(np_arr_shape):
 
 
 def worker_producer(np_arr_shape, queue, n_frames):
-    """A frame producer function, e.g. for a worker thread or process"""
+    """A frame producer function, e.g. for a worker thread or process
+    :param Tuple[int, int] np_arr_shape: The shape of the numpy array to generate
+    :param int n_frames: the number of frames to produce
+    """
     for _ in range(n_frames):
-        np_arr = prepare_random_frame(np_arr_shape)  # produce a fresh array
+        # produce a fresh array
+        np_arr = prepare_random_frame(np_arr_shape)
         queue.put(np_arr)
 
 
