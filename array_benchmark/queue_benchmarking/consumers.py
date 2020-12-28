@@ -23,4 +23,3 @@ def consumer_shared_memory(n_frames, shared_memory):
             # it already unlocked, wait until its locked again which means a new frame is ready
             except ValueError:
                 time.sleep(0.001)
-
