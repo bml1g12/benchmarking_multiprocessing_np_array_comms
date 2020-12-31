@@ -10,3 +10,26 @@ This repo compares, in order of speed from slowest to fastest, the following met
 4. mp.Array (shared memory) with mp.Queue for metadata
 5. mp.Array (shared memory) with mp.Pipe for metadata
 6. threading.Thread with queue.Queue for sharing arrays.
+
+It implements two benchmarks:
+
+1. ("queue_benchmarking") Passing an image numpy array from a producer to a consumer
+2. ("demo_application_benchmarking") Passing an image numpy array from many producers to a single consumer, which could then go on to, for example, stich the images into a real-time grid.
+
+And includes a few implementations of the same the [Ray library](https://docs.ray.io/en/latest/index.html).
+
+In these benchmarks, an `time.sleep()` is used on the Producer; when this occurs during the multithreading benchmarks, other threads can jump into action and make use of the CPU, so its a good emulation of I/O bound Producer. As a result, multithreading comes out very fast here, if we have a CPU bound Producer then we can likely expect multiprocessing to trump the max speed.
+
+## How To Run 
+
+`pip install requirements.txt`
+
+`pip install -e setup.py`
+
+`python array_benchmark/demo_application_benchmarking/main.py`
+
+`python array_benchmark/queue_benchmarking/main.py`
+
+## Output
+
+Timings can be found in the ./timings folder. 
