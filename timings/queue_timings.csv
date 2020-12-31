@@ -1,4 +1,4 @@
-,groupname,time_per_frame,stddev,fps,time_for_all_frames
+,groupname,time_per_frame,stddev_for_all_frames,fps,time_for_all_frames
 0,baseline_benchmark,0.0105,0.4202,94.8490347053171,10.5
 1,queue_1thread_module,0.0096,0.3644,104.623563150713,9.6
 2,mp_queue_1proc_benchmark,0.0312,0.1961,32.0143637409846,31.2
