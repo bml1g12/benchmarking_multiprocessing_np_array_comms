@@ -14,8 +14,10 @@ This repo compares, in order of speed from slowest to fastest, the following met
 It implements two benchmarks:
 
 1. ("queue_benchmarking") Passing an image numpy array from a producer to a consumer
+    * A (240, 320) array over 1000 frames
 2. ("demo_application_benchmarking") Passing an image numpy array from many producers to a single consumer, which could then go on to, for example, stich the images into a real-time grid.
-
+    * A (240, 320) array from 16 producers to a signle consumer over 1000 frames.
+    
 And includes a few implementations of the same the [Ray library](https://docs.ray.io/en/latest/index.html).
 
 In these benchmarks, an `time.sleep()` is used on the Producer; when this occurs during the multithreading benchmarks, other threads can jump into action and make use of the CPU, so its a good emulation of I/O bound Producer. As a result, multithreading comes out very fast here, if we have a CPU bound Producer then we can likely expect multiprocessing to trump the max speed.
@@ -32,4 +34,8 @@ In these benchmarks, an `time.sleep()` is used on the Producer; when this occurs
 
 ## Output
 
-Timings can be found in the ./timings folder. 
+Timings can be found in the ./timings folder.
+
+Timings are reported over 1000 frames as `time_for_all_frames` (seconds) +/- `stddev_for_all_frames` (seconds)  with this standard deviation calculatied over 3 repeats. `time_per_frame` is calculated as `time_for_all_frames`/1000 and the FPS is calculated as 1/`time_per_frame`.
+
+

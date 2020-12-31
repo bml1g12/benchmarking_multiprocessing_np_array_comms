@@ -28,7 +28,7 @@ def get_timings(metagroupname, groupname, times_calculated_over_n_frames):
     time_per_frame = timing_group.summary[groupname]["mean"]/times_calculated_over_n_frames
     stddev = f"{timing_group.summary[groupname]['stddev']:.4f}"
     fps = f"{1 / time_per_frame}"
-    print(f"{groupname}: time: = {timing_group.summary[groupname]['mean']} +/- "
+    print(f"{groupname}: time_for_all_frames: = {timing_group.summary[groupname]['mean']} +/- "
           f"{stddev}"
           f" or FPS = {fps}")
     return {"groupname": groupname,
