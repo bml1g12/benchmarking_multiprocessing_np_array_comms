@@ -8,8 +8,8 @@ import array_benchmark.demo_application_benchmarking.serial as serial
 import array_benchmark.demo_application_benchmarking.shared_memory_array as shared_memory_array
 import array_benchmark.demo_application_benchmarking.shared_memory_array_with_pipes as \
     shared_memory_array_with_pipes
-import array_benchmark.demo_application_benchmarking.mp_queue_arrayqueuelibrary as \
-    mp_queue_arrayqueuelibrary
+#import array_benchmark.demo_application_benchmarking.mp_queue_arrayqueuelibrary as \
+#    mp_queue_arrayqueuelibrary
 from array_benchmark.shared import get_timings
 
 
