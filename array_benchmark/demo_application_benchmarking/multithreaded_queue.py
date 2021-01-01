@@ -17,7 +17,7 @@ from array_benchmark.shared import prepare_frame
 _TIME = timing.get_timing_group(__name__)
 
 
-def frame_stream(camera_index, per_camera_array, array_dim, n_frames):
+def frame_stream(camera_index, per_camera_array, frame_gen_config, n_frames):
     """A demo of a function that is obtaining numpy arrays, and then storing them in a way that
     can be accessed by other processes efficiently. For example, can imagine this represents
     a camera feed with some processing of the feed.
@@ -25,7 +25,8 @@ def frame_stream(camera_index, per_camera_array, array_dim, n_frames):
     :param int camera_index: 0-indexed index specific to each frame stream/camera.
     :param queue.Queue per_camera_array: Machinery for sharing information between processes,
     but specific to this camera
-    :param Tuple[int. int] array_dim: dimensions in pixels for the numpy array
+    :param dict frame_gen_config: A dictionary containing key array_dim, the dimensions
+      in pixels for the numpy array as Tuple[int, int]
     :param int n_frames: how many frames to write before killing self
     """
     print(f"A worker process for processing data from camera id: {camera_index} has started"
@@ -33,7 +34,7 @@ def frame_stream(camera_index, per_camera_array, array_dim, n_frames):
     queue = per_camera_array
     frames_written = 0
     while True:
-        frame = prepare_frame(array_dim, frames_written)
+        frame = prepare_frame(frame_gen_config, frames_written)
         np_array = frame
         # store img and metadata related to the frame as a tuple
         queue.put((np_array, frames_written))
@@ -42,7 +43,7 @@ def frame_stream(camera_index, per_camera_array, array_dim, n_frames):
             break
 
 
-def setup_mp_resources(array_dim, number_of_cameras, n_frames):
+def setup_mp_resources(frame_gen_config, number_of_cameras, n_frames):
     """Setup the multiprocessing resources.
      Prepare a queue for each process, used for sharing the frames and the associated metadata
      (together as a tuple) from slave processes to master."""
@@ -56,7 +57,7 @@ def setup_mp_resources(array_dim, number_of_cameras, n_frames):
         thread = threading.Thread(target=frame_stream,
                                   args=(camera_index,
                                         per_camera_arrays[camera_index],
-                                        array_dim,
+                                        frame_gen_config,
                                         n_frames))
         threads.append(thread)
     return per_camera_arrays, threads
@@ -75,10 +76,10 @@ def display_frame_from_camera(show_img, per_camera_arrays, selected_camera_index
     return img
 
 
-def benchmark(array_dim, number_of_cameras, show_img, n_frames, repeats):
+def benchmark(frame_gen_config, number_of_cameras, show_img, n_frames, repeats):
     """Measure performance of this implementation"""
     print("Master thread started.")
-    per_camera_arrays, threads = setup_mp_resources(array_dim, number_of_cameras, n_frames)
+    per_camera_arrays, threads = setup_mp_resources(frame_gen_config, number_of_cameras, n_frames)
     for timer in _TIME.measure_many("multithreaded_queue", samples=repeats):
         for thread in threads:
             thread.start()
@@ -99,10 +100,12 @@ def benchmark(array_dim, number_of_cameras, show_img, n_frames, repeats):
             thread.join()
 
         # for next test
-        per_camera_arrays, threads = setup_mp_resources(array_dim, number_of_cameras, n_frames)
+        per_camera_arrays, threads = setup_mp_resources(frame_gen_config, number_of_cameras,
+                                                        n_frames)
     del per_camera_arrays
     del threads
 
 
 if __name__ == "__main__":
-    benchmark(array_dim=(240, 320), number_of_cameras=2, show_img=False, n_frames=1000, repeats=3)
+    benchmark(frame_gen_config={"array_dim": (240, 320), "is_io_limited": True},
+              number_of_cameras=2, show_img=False, n_frames=1000, repeats=3)

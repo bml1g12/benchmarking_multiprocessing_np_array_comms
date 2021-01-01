@@ -21,33 +21,33 @@ ray.init()
 @ray.remote
 class FrameStreamWorker:  # pylint: disable = too-few-public-methods
     """A class for a worker which generates frames ("Actor" in ray terminology)"""
-    def __init__(self, camera_index, queue, array_dim):
+    def __init__(self, camera_index, queue, frame_gen_config):
         """A demo of a function that is obtaining numpy arrays, and then storing them in a way that
         can be accessed by other processes efficiently. For example, can imagine this represents
         a camera feed with some processing of the feed.
 
         :param int camera_index: 0-indexed index specific to each frame stream/camera.
         :param tuple queue: Machinery for sharing information between processes,
-        but specific
-        to this camera
-        :param Tuple[int. int] array_dim: dimensions in pixels for the numpy array
+        but specific to this camera
+        :param dict frame_gen_config: A dictionary containing key array_dim, the dimensions
+     in pixels for the numpy array as Tuple[int, int]
         """
         self.queue = queue
         self.frames_written = 0
-        self.array_dim = array_dim
+        self.frame_gen_config = frame_gen_config
         self.camera_index = camera_index
         print(f"A worker process for processing data from camera id: {camera_index} has started"
               f" processing data in background.")
 
     def get_frame(self):
         """Frame generator"""
-        frame = prepare_frame(self.array_dim, self.frames_written)
+        frame = prepare_frame(self.frame_gen_config, self.frames_written)
         np_array = frame
         self.frames_written += 1
         return np_array  # self.frames_written
 
 
-def setup_mp_resources(array_dim, number_of_cameras):
+def setup_mp_resources(frame_gen_config, number_of_cameras):
     """Setup the multiprocessing resources.
      Prepare a queue for each process, used for sharing the frames and the associated metadata
      (together as a tuple) from slave processes to master."""
@@ -58,7 +58,7 @@ def setup_mp_resources(array_dim, number_of_cameras):
         queue = RayQueue(maxsize=100)
         proc = FrameStreamWorker.remote(camera_index,  # pylint: disable = no-member
                                         queue,
-                                        array_dim)
+                                        frame_gen_config)
         procs.append(proc)
     return procs
 
@@ -76,10 +76,10 @@ def display_frame_from_camera(selected_proc, show_img):
     return img
 
 
-def benchmark(array_dim, number_of_cameras, show_img):
+def benchmark(frame_gen_config, number_of_cameras, show_img):
     """Measure performance of this implementation"""
     print("Master process started.")
-    procs = setup_mp_resources(array_dim, number_of_cameras)
+    procs = setup_mp_resources(frame_gen_config, number_of_cameras)
 
     time1 = time.time()
     for _ in tqdm(range(1000)):
@@ -95,4 +95,5 @@ def benchmark(array_dim, number_of_cameras, show_img):
 
 
 if __name__ == "__main__":
-    benchmark(array_dim=(240, 320), number_of_cameras=2, show_img=False)
+    benchmark(frame_gen_config={"array_dim": (240, 320), "is_io_limited": True},
+              number_of_cameras=2, show_img=False)
