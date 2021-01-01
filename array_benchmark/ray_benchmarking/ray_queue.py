@@ -17,7 +17,7 @@ ray.init()
 
 
 @ray.remote
-def frame_stream(camera_index, per_camera_array, array_dim):
+def frame_stream(camera_index, per_camera_array, frame_gen_config):
     """A demo of a function that is obtaining numpy arrays, and then storing them in a way that
     can be accessed by other processes efficiently. For example, can imagine this represents
     a camera feed with some processing of the feed.
@@ -25,21 +25,22 @@ def frame_stream(camera_index, per_camera_array, array_dim):
     :param int camera_index: 0-indexed index specific to each frame stream/camera.
     :param tuple per_camera_array: Machinery for sharing information between processes, but specific
     to this camera
-    :param Tuple[int. int] array_dim: dimensions in pixels for the numpy array
+    :param dict frame_gen_config: A dictionary containing key array_dim, the dimensions
+     in pixels for the numpy array as Tuple[int, int]
     """
     print(f"A worker process for processing data from camera id: {camera_index} has started"
           f" processing data in background.")
     queue = per_camera_array
     frames_written = 0
     while True:
-        frame = prepare_frame(array_dim, frames_written)
+        frame = prepare_frame(frame_gen_config, frames_written)
         np_array = frame
         # store img and metadata related to the frame as a tuple
         queue.put((np_array, frames_written))
         frames_written += 1
 
 
-def setup_mp_resources(array_dim, number_of_cameras):
+def setup_mp_resources(frame_gen_config, number_of_cameras):
     """Setup the multiprocessing resources.
      Prepare a queue for each process, used for sharing the frames and the associated metadata
      (together as a tuple) from slave processes to master."""
@@ -50,7 +51,7 @@ def setup_mp_resources(array_dim, number_of_cameras):
     for camera_index in range(number_of_cameras):
         queue = RayQueue(maxsize=100)
         per_camera_arrays[camera_index] = queue
-        proc = frame_stream.remote(camera_index, per_camera_arrays[camera_index], array_dim)
+        proc = frame_stream.remote(camera_index, per_camera_arrays[camera_index], frame_gen_config)
         procs.append(proc)
     return per_camera_arrays, procs
 
@@ -68,10 +69,10 @@ def display_frame_from_camera(show_img, per_camera_arrays, selected_camera_index
     return img
 
 
-def benchmark(array_dim, number_of_cameras, show_img):
+def benchmark(frame_gen_config, number_of_cameras, show_img):
     """Measure performance of this implementation"""
     print("Master process started.")
-    per_camera_arrays, _ = setup_mp_resources(array_dim, number_of_cameras)
+    per_camera_arrays, _ = setup_mp_resources(frame_gen_config, number_of_cameras)
 
     time1 = time.time()
     for _ in tqdm(range(1000)):
@@ -87,4 +88,5 @@ def benchmark(array_dim, number_of_cameras, show_img):
 
 
 if __name__ == "__main__":
-    benchmark(array_dim=(240, 320), number_of_cameras=2, show_img=True)
+    benchmark(frame_gen_config={"array_dim": (240, 320), "is_io_limited": True},
+              number_of_cameras=2, show_img=False)

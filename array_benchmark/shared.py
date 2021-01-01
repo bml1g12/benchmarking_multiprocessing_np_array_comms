@@ -6,10 +6,27 @@ import numpy as np
 import timing
 
 
-def prepare_frame(array_dim, frames_written):
-    """Emulating a time consuming process of obtaining a frame"""
-    frame = np.ones(array_dim) * frames_written
-    time.sleep(0.001)
+def prepare_frame(frame_gen_config, frames_written):
+    """Emulating a time consuming process of obtaining a frame
+    frame_gen_config is a dictionary with two keys: array_dim and is_io_limited.
+    :param Tuple[int, int] array_dim: dimensions of the frame we wish to produce
+    :param int frames_written: number of frames written so far, used to gradually increase the
+    whiteness of the frame, so we can "see" chronology in a video of the output.
+    :param bool is_io_limited: If True, will use time.sleep() to emulate an I/O limited producer.
+    If False will use a CPU heavy calculation to emulate a CPU limited producer.
+    :returns np.array frame: A numpy array of the producer frame
+    """
+    frame = np.ones(frame_gen_config["array_dim"]) * frames_written
+    if frame_gen_config["is_io_limited"]:
+        time.sleep(0.001)
+    else:
+        time1 = time.time()
+        while True:
+            _ = 999*999
+            time2 = time.time()
+            if (time2-time1) > 0.001:
+                break
+
     return frame
 
 

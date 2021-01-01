@@ -5,8 +5,8 @@ import numpy as np
 
 
 def prepare_random_frame(np_arr_shape):
-    """Emulate an expensive frame generation/processing step here, as if the computation
-    for a given process is trivial, then we might as well not use processes and do it in serial.
+    """Emulate an I/O limited frame generation/processing step here. If this time is very small,
+    the benefit of concurrent processing is reduced.
 
     :param np_arr_shape Tuple[int, int]: array shape
     :returns: a random generated black and white np.array
