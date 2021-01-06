@@ -6,11 +6,17 @@ Tested using Python 3.7.0 on Ubuntu 20.04 LTS with Intel(R) Core(TM) i7-7700HQ C
 
 This repo compares the following methods for sharing numpy arrays between threads/processes in order of slowest to fastest for a I/O bound task ("demo application benchmark"):
 
+**IO Limited producer for "demo_application_benchmarking"**
+
+![IO Limited](timings/IO_Limited.png)
+
 1. Serial baseline
 2. Simple mp.Queue (serialising and pickling the data into a queue)
 3. mp.Array (shared memory) with mp.Queue for metadata
 4. mp.Array (shared memory) with mp.Pipe for metadata
 5. threading.Thread with queue.Queue for sharing arrays.
+
+**CPU Limited producer for "demo_application_benchmarking"**
 
 And for sharing numpy arrays between threads/processes in order of slowest to fastest for a CPU bound task ("demo application benchmark"):
 
@@ -20,9 +26,12 @@ And for sharing numpy arrays between threads/processes in order of slowest to fa
 4. mp.Array (shared memory) with mp.Queue for metadata
 5. mp.Array (shared memory) with mp.Pipe for metadata
 
-In these benchmarks, when a `time.sleep()` is used on the Producer it is a good emulation of I/O bound Producer because, like with an I/O bound task, the CPU is available for computation. In this situation, multithreaded code can simply allow another thread to do useful work whilst the sleep is occuring on one thread. As a result, multithreading outperforms the multiprocessing speed when `time.sleep()` is used. When emulating CPU intensive Producer, the multiprocessing code outperforms the multithreaded code as expected.
 
-It implements two benchmarks:
+![CPU Limited](timings/CPU_Limited.png)
+
+In these benchmarks, when a `time.sleep()` is used on the Producer it is a good emulation of I/O bound Producer because, like with an I/O bound task, the CPU is available for computation. In this situation, multithreaded code can simply allow another thread to do useful work whilst the sleep is occuring on one thread. As a result, multithreading outperforms the multiprocessing speed when `time.sleep()` is used. In contrast, when emulating CPU intensive Producer, the multiprocessing code outperforms the multithreaded code as expected.
+
+Two benchmarks are implemented:
 
 1. ("queue_benchmarking") Passing an image numpy array from a single producer to a single consumer
     * A (240, 320) array over 1000 frames
