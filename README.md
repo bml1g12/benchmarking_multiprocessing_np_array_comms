@@ -61,4 +61,6 @@ Timings can be found in the ./timings folder.
 
 Timings are reported over 1000 frames as `time_for_all_frames` (seconds) +/- `stddev_for_all_frames` (seconds)  with this standard deviation calculatied over 3 repeats. `time_per_frame` is calculated as `time_for_all_frames`/1000 and the FPS is calculated as 1/`time_per_frame`.
 
+## Notes
 
+Note that this approach will not work when processes are set to "spawn" mode (i.e. on windows) as per discussion [here](https://github.com/bml1g12/benchmarking_multiprocessing_np_array_comms/issues/4). 
